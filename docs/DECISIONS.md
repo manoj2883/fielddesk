@@ -47,3 +47,9 @@ ADR-lite. Each entry gives the context, the options, the choice and the trade-of
 - **Context:** The dev machine is a Windows laptop with 8 GB RAM and no Docker. Docker Desktop needs WSL2 and would take 2–4 GB.
 - **Choice:** Ship a multi-stage, uv-based Dockerfile (dependency layer separated from source, non-root user, healthcheck), and say plainly in the README and the Dockerfile that it hasn't been built locally. The app runs natively with `make serve`.
 - **Trade-off:** The image is unverified until a CI runner builds it. That check belongs with the CI gate in Chapter 4.
+
+## D6 · No temperature; diversity comes from the spec
+
+- **Context:** The chapter spec asked for generation "at higher temperature". `claude-sonnet-5-5` returns a 400 for any non-default `temperature`.
+- **Choice:** Variation is pushed into the seeded spec matrix instead: dealer voice (6 styles across 15 dealers), three length bands, messy traits (typos, vague, angry, shorthand, missing fields, run-on), deadline phrasings, safety-symptom phrasings, misleading-wording twists and injection sentences. The static system prompt (rules plus 8 hand-written example tickets across all categories and voices) is cached; only the per-ticket FACTS/STYLE block changes. Near-duplicates are removed afterwards with rapidfuzz.
+- **Trade-off:** One generator family with one decoding setting can still converge on a "house style". That is a known limit in the dataset card. The blind second pass by a model from another family partly checks for it.

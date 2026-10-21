@@ -50,7 +50,7 @@ ignore = ["S101", "RUF001", "RUF002", "RUF003"]
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["S", "N802", "N817"]
 "evals/**" = ["S311"]
-"data/generator/**" = ["S311"]
+"data/generator/**" = ["S311", "E501"]  # prompt prose strings
 
 [tool.mypy]
 python_version = "3.12"
