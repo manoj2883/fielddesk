@@ -83,9 +83,10 @@ async def generate_one(spec: ScenarioSpec, llm: LLMClient, settings: Settings) -
                 model=settings.generator_model,
                 system=system,
                 user=render(spec, attempt),
-                max_tokens=1200,
+                max_tokens=settings.generator_max_tokens,
                 thinking="between_tools",
                 effort="medium",
+                timeout_s=settings.generator_timeout_s,
             )
             text, c = await _call_with_retry(llm, call)
             cost += c

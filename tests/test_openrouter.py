@@ -1,6 +1,7 @@
 """OpenRouter backend against an httpx MockTransport: request shape, parsing, errors, pacing,
 and the full graph running on free-model IDs."""
 
+import asyncio
 import json
 import time
 from pathlib import Path
@@ -63,6 +64,8 @@ def make(tmp_path: Path, rec: Recorder, **kw: Any) -> LLMClient:
         anthropic_api_key=None,
         ledger_path=tmp_path / "ledger.jsonl",
         openrouter_min_interval_s=0.0,
+        classify_model=CLASSIFY,
+        draft_model=DRAFT,
         **kw,
     )
     return LLMClient(s, openrouter_transport=httpx.MockTransport(rec))
@@ -182,3 +185,24 @@ async def test_free_model_rate_limit_ends_in_llm_error(tmp_path: Path) -> None:
     )
     assert r.escalation_reason is EscalationReason.LLM_ERROR
     assert len(rec.requests) == 3  # retried as transient, then gave up cleanly
+
+
+async def test_hard_timeout_caps_a_trickling_server(tmp_path: Path) -> None:
+    async def slow(request: httpx.Request) -> httpx.Response:
+        await asyncio.sleep(2)
+        return httpx.Response(200, json=completion("late"))
+
+    s = Settings(
+        openrouter_api_key="test-or-key",
+        ledger_path=tmp_path / "ledger.jsonl",
+        openrouter_min_interval_s=0.0,
+    )
+    llm = LLMClient(s, openrouter_transport=httpx.MockTransport(slow))
+    call = CallSpec(
+        node="generate", model=DRAFT, system="s", user="u", max_tokens=10, timeout_s=0.1
+    )
+    started = time.monotonic()
+    with pytest.raises(TimeoutError) as info:
+        await llm.text(call)
+    assert time.monotonic() - started < 1.0
+    assert is_transient(info.value)

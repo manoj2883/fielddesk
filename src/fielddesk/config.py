@@ -50,10 +50,14 @@ class Settings(BaseSettings):
     # Defaults are free OpenRouter models (plan change 2026-10-20). To switch back to Claude, set
     # FIELDDESK_CLASSIFY_MODEL=claude-haiku-5-5, FIELDDESK_DRAFT_MODEL=claude-sonnet-5-5 and
     # FIELDDESK_GENERATOR_MODEL=claude-sonnet-5-5.
-    classify_model: str = "minimax/minimax-m3.1-flash:free"
-    draft_model: str = "google/gemma-4-31b-it:free"
-    generator_model: str = "google/gemma-4-31b-it:free"
-    validator_model: str = "nvidia/nemotron-3-super-120b-a12b:free"
+    # Chosen 2026-10-21 by live smoke tests (JOURNAL): every pair that must be independent comes
+    # from different families (generator vs classifier, generator vs validator, classifier vs
+    # validator).
+    classify_model: str = "nvidia/nemotron-3.5-super-vl:free"
+    draft_model: str = "minimax/minimax-m3.1-flash:free"
+    generator_model: str = "minimax/minimax-m3.1-flash:free"
+    validator_model: str = "google/gemma-4-31b-it:free"
+    validator_fallback_model: str = "dots-studio/dots-3-note-preview:free"
     openrouter_base_url: str = "https://openrouter.ai/api/v1"
     # Free tier allows ~20 requests/minute; 3.2 s spacing stays under it.
     openrouter_min_interval_s: float = 3.2
@@ -74,8 +78,12 @@ class Settings(BaseSettings):
     confidence_threshold: float = Field(default=0.7, ge=0.0, le=1.0)
     max_spend_usd: float = Field(default=5.0, gt=0.0)
 
-    classify_max_tokens: int = 1024
-    draft_max_tokens: int = 1024
+    # Generous: some free models reason before answering and are cut off at low limits. Free
+    # models cost $0 per token, so the budget reservation for these limits is also $0.
+    classify_max_tokens: int = 2048
+    draft_max_tokens: int = 2048
+    generator_max_tokens: int = 3000
+    generator_timeout_s: float = 120.0
     node_run_timeout_s: float = 45.0
     retry_max_attempts: int = 3
     retry_initial_interval_s: float = 0.5

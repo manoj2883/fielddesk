@@ -76,6 +76,7 @@ _TRANSIENT = (
     anthropic.APIConnectionError,  # includes APITimeoutError
     httpx.TimeoutException,
     httpx.TransportError,
+    TimeoutError,  # our wall-clock cap (asyncio.timeout)
     NodeTimeoutError,
 )
 
@@ -167,6 +168,7 @@ class CallSpec:
     max_tokens: int
     thinking: ThinkingMode = "disabled"  # Anthropic only
     effort: Effort | None = None  # Anthropic only
+    timeout_s: float | None = None  # hard wall-clock cap; defaults to settings.node_run_timeout_s
 
 
 @dataclass
@@ -387,7 +389,10 @@ class LLMClient:
             {"role": "user", "content": spec.user},
         ]
         await self._pacer.wait()
-        response = await self.http.post("/chat/completions", json=body)
+        # httpx's timeout is per read, so a server that trickles bytes can hold a call open
+        # indefinitely (JOURNAL 2026-10-21). This caps the whole request.
+        async with asyncio.timeout(spec.timeout_s or self.settings.node_run_timeout_s):
+            response = await self.http.post("/chat/completions", json=body)
         if response.status_code != 200:
             raise OpenRouterHTTPError(response.status_code, response.text)
         data = response.json()

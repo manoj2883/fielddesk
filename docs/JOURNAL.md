@@ -55,3 +55,33 @@ What broke, the evidence, and the fix. Newest entries go at the bottom. Failures
   - the full graph on free-model IDs;
   - a 429 retried 3 times, then a clean `llm_error`.
 - Still unverified until a key exists: whether these exact free models honor JSON mode reliably, and the account's real daily cap. Both are checked at checkpoint 3.
+
+## 2026-10-21 · Live smoke tests: which free models actually work
+
+The account is free tier with **50 requests/day** (read from OpenRouter's `/key` endpoint). Ten requests went into finding working models:
+
+| Model | Role tried | Result |
+|---|---|---|
+| `minimax/minimax-m3.1-flash:free` | classify | ✅ valid JSON in JSON mode, 2.4 s, correct category and priority |
+| `nvidia/nemotron-3-super-120b-a12b:free` | validator | ❌ HTTP 404: the upstream provider's function is "not found for account" |
+| `nvidia/nemotron-3.5-super-vl:free` | validator | ✅ native `json_schema`, 6.9 s, correct |
+| `dots-studio/dots-3-note-preview:free` | validator | ✅ 17.3 s, correct |
+| `google/gemma-4-31b-it:free` | generator | ❌ HTTP 429 "temporarily rate-limited upstream" (twice) |
+| `google/gemma-4-26b-a4b-it:free` | generator | ❌ HTTP 429 upstream |
+| `xingchen-agi/xing4.0-29b-a4b:free` | generator | ❌ HTTP 429 upstream |
+| `thinkingmachines/inkling:free` | generator | ❌ HTTP 403 "only available on agentic harnesses" |
+| `dots-studio/dots-3-note-preview:free` | generator | ❌ hit `max_tokens` at 1,500 (reasons before answering). At 4,000 the call **hung over 5 minutes**, then `httpx.ReadError` |
+
+**Two fixes came out of this:**
+1. **A hard wall-clock timeout on every OpenRouter call** (`asyncio.timeout`). httpx's timeout is per read, so a server that sends bytes slowly can hold a request open with no upper bound. The node timeout would have caught it inside the graph, but the generator runs outside the graph and had no cap. Covered by `test_hard_timeout_caps_a_trickling_server`. `TimeoutError` is transient, so it's retried.
+2. **Higher `max_tokens` for free models** (classify and draft 2,048, generator 3,000). Reasoning-style models spend output tokens before answering. These models cost $0, so this has no budget effect.
+
+**Role assignment, driven by what works and by independence:**
+- generator: MiniMax
+- classifier: Nemotron 3.5 VL
+- draft: MiniMax
+- validator: Gemma 4 31B, falling back to dots-3
+
+Generator, classifier and validator are three different families. That matters more than which model is "best": the classifier must not grade text written by its own model, and the validator must not share a family with either.
+
+**Lesson for the README:** with free models, "which model" is a runtime fact, not a design-time one. Results files record the model IDs actually used, and the pipeline has to tolerate a model disappearing mid-run.
