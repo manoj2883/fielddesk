@@ -19,3 +19,13 @@ What broke, the evidence, and the fix. Newest entries go at the bottom. Failures
 - **Symptom:** `test_safety_codes_cover_the_named_hazards` failed. No safety code's meaning contained "fire", although two were written that way.
 - **Cause:** `{..., meaning: exhaust aftertreatment over-temperature, fire risk}` is a YAML flow mapping. The comma ended the value, and `fire risk` was parsed as a separate key with a null value. The meaning was silently cut short and nothing raised an error.
 - **Fix:** every `meaning` is now quoted. The test that caught it stays. Without it, the generator would have described RX-E128 and RX-E655 without the fire hazard, which is the fact that makes them safety codes.
+
+## 2026-10-20 · S2 network-blocking fixture vs the Windows event loop
+
+- **Symptom:** the first async test in `test_llm.py` errored with `SocketBlockedError: A test tried to use socket.socket`, even though the fake client makes no network calls.
+- **Cause:** on Windows, asyncio's proactor event loop opens an AF_INET loopback socket pair for its self-pipe. `--disable-socket --allow-unix-socket` blocks every non-Unix socket, so the event loop couldn't start.
+- **Fix:** pytest now runs with `--allow-hosts=127.0.0.1,::1`. Sockets can be created, but connecting to anything other than loopback raises. The smoke test now connects to a TEST-NET-3 IP literal (`203.0.113.10`) instead of a hostname, so it also proves no DNS lookup happens before the block.
+
+## 2026-10-20 · S2 regex miss in the brake guard
+
+- The first draft of the brake pattern matched "brakes not holding" but not "brakes **are** not holding". The table-driven test caught it before any data existed. Fixed with an optional `(are|is)` and kept as a test case.

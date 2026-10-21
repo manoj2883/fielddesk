@@ -75,4 +75,6 @@ Commits: one or more conventional commits per step (`chore:`, `feat:`, `test:`, 
 
 | Step | State |
 |---|---|
-| S0–S8 | not started |
+| S0 | done (74f999b, ad4cae8) |
+| S1 | done (cbdcbb0), awaiting checkpoint 2 |
+| S2–S8 | not started |
