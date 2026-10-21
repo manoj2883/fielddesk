@@ -52,7 +52,10 @@ def render(spec: ScenarioSpec, attempt: int = 0) -> str:
     if s.error_code:
         lines.append(f"- Error code on the display: {s.error_code} ({s.error_meaning}).")
     if f.safety_code and not f.safety_symptom:
-        lines.append("- The dealer mentions the code but may underplay how serious it is.")
+        lines.append(
+            "- The dealer says in plain words what the code is about (e.g. 'park brake "
+            "fault', 'steering pressure warning') but may underplay how serious it is."
+        )
     if s.safety_symptom_text:
         lines.append(f"- Safety hazard to describe: {s.safety_symptom_text}.")
     if s.deadline_text:

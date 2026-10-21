@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import json
 import random
 import re
@@ -47,7 +48,11 @@ def _safe(name: str) -> str:
 
 
 def _cache_path(spec: ScenarioSpec, attempt: int, model: str) -> Path:
-    return CACHE_DIR / f"{spec.spec_hash}_{GEN_PROMPT_VERSION}_{_safe(model)}_a{attempt}.json"
+    """Keyed by everything that shapes the output: spec, prompt version, model, and the exact
+    per-ticket instructions (so a renderer change can never serve a stale ticket)."""
+    rendered = hashlib.sha256(render(spec, attempt).encode()).hexdigest()[:8]
+    name = f"{spec.spec_hash}_{GEN_PROMPT_VERSION}_{_safe(model)}_r{rendered}_a{attempt}.json"
+    return CACHE_DIR / name
 
 
 def to_ticket(spec: ScenarioSpec, text: GeneratedText) -> TicketInput:
