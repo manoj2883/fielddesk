@@ -148,7 +148,7 @@ async def test_pacer_spaces_requests(tmp_path: Path) -> None:
     started = time.monotonic()
     for _ in range(3):
         await llm.text(spec(DRAFT))
-    assert time.monotonic() - started >= 0.3
+    assert time.monotonic() - started >= 0.25  # two waits of 0.15 s; Windows clock is ~15 ms coarse
 
 
 async def test_unpriced_paid_openrouter_model_is_refused(tmp_path: Path) -> None:

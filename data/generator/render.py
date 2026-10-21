@@ -4,18 +4,8 @@ from __future__ import annotations
 
 from data.generator.spec import ScenarioSpec
 from fielddesk.labeling import MachineImpact, WarrantyDecision
-from fielddesk.schemas import Category, TrickyType, WarrantyStatus
+from fielddesk.schemas import TrickyType, WarrantyStatus
 
-ASK_TEXT: dict[Category, str] = {
-    Category.PARTS_REQUEST: "needs a part sourced, shipped or confirmed (stock, lead time or substitute); "
-    "the diagnosis is already done",
-    Category.WARRANTY_CLAIM: "needs a decision on whether a failure or repair will be covered",
-    Category.TECHNICAL_FAULT: "needs help diagnosing or fixing a machine problem",
-    Category.SERVICE_SCHEDULING: "needs a factory field technician visit, a service campaign slot, "
-    "training, or a change to a booking",
-    Category.BILLING: "needs an invoice, credit, statement or payment issue corrected or explained",
-    Category.OTHER: "has a request that is none of: parts, coverage, diagnosis, scheduling or billing",
-}
 IMPACT_TEXT = {
     MachineImpact.DOWN: "the machine cannot work, or the dealer has told the customer not to use it",
     MachineImpact.DEGRADED: "the machine still runs but with reduced performance or an intermittent problem",
@@ -48,17 +38,17 @@ def render(spec: ScenarioSpec, attempt: int = 0) -> str:
     lines.append(
         f"- Machine: {s.machine_model} ({s.machine_type}), about {s.machine_hours_true} hours."
     )
-    lines.append(f"- Main ask: the dealer {ASK_TEXT[f.asks[0]]}.")
-    if f.asks[0] is Category.OTHER and s.other_ask_text:
-        lines.append(f"  Specifically, the dealer {s.other_ask_text}.")
-    for extra in f.asks[1:]:
-        lines.append(f"- Second ask, also included: the dealer {ASK_TEXT[extra]}.")
+    lines.append(f"- Main ask: {s.ask_details[0]}.")
+    for detail in s.ask_details[1:]:
+        lines.append(f"- Second ask, also included: {detail}.")
     if f.conflicting_asks:
         lines.append(
             "- The two asks pull against each other (e.g. act now vs. wait for a decision); "
             "the dealer wants both and does not say which comes first."
         )
-    lines.append(f"- Machine impact: {IMPACT_TEXT[f.machine_impact]}.")
+    if f.machine_impact is not MachineImpact.NONE:
+        # "No impact" is conveyed by silence: dealers don't announce that nothing is broken.
+        lines.append(f"- Machine impact: {IMPACT_TEXT[f.machine_impact]}.")
     if s.error_code:
         lines.append(f"- Error code on the display: {s.error_code} ({s.error_meaning}).")
     if f.safety_code and not f.safety_symptom:

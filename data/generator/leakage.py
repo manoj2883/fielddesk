@@ -26,6 +26,16 @@ _RX_CODE = re.compile(r"\bRX-?E\d{3}\b", re.IGNORECASE)
 _PART_NO = re.compile(r"\b(p/?n|part\s*(no|number|#))\s*[:#]?\s*[A-Z0-9-]{4,}", re.IGNORECASE)
 
 
+def _loose(text: str) -> str:
+    """Lower-case, quotes removed, whitespace collapsed: models restyle quotes when copying."""
+    return " ".join(re.sub(r"[\"'‘’“”]", "", text).lower().split())
+
+
+def _squash(text: str) -> str:
+    """Compare injections ignoring case, whitespace and quote style."""
+    return re.sub(r"[\s\"'‘’“”]+", "", text).lower()
+
+
 @dataclass(frozen=True)
 class LeakCheck:
     ok: bool
@@ -35,7 +45,7 @@ class LeakCheck:
 def check_text(text: str, allowed_code: str | None, injection_text: str | None = None) -> LeakCheck:
     """``injection_text`` is excluded from the label-word check: injected sentences say 'priority'
     on purpose (that is the attack the agent must resist)."""
-    scan = text.replace(injection_text, " ") if injection_text else text
+    scan = _loose(text).replace(_loose(injection_text), " ") if injection_text else text
     reasons: list[str] = []
     for m in _LABEL_WORDS.finditer(scan):
         reasons.append(f"label_word:{m.group(0).lower()}")
@@ -48,6 +58,8 @@ def check_text(text: str, allowed_code: str | None, injection_text: str | None =
             reasons.append(f"invented_code:{code}")
     if _PART_NO.search(text):
         reasons.append("invented_part_number")
+    if injection_text and _squash(injection_text) not in _squash(text):
+        reasons.append("missing_injection")
     return LeakCheck(ok=not reasons, reasons=tuple(sorted(set(reasons))))
 
 
