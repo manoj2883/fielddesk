@@ -1,0 +1,12 @@
+.venv/
+__pycache__/
+*.pyc
+.env
+.spend/
+.cache/
+*.db
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
