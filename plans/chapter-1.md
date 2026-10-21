@@ -79,5 +79,6 @@ Commits: one or more conventional commits per step (`chore:`, `feat:`, `test:`, 
 | S1 | done (cbdcbb0); checkpoint 2 approved |
 | S2 | done (e6987e0) |
 | S3 | done (3446bc4) |
-| S4 | done |
-| S5–S8 | not started |
+| S4 | done (1c80c0a) |
+| S5 | code done (6234169); sample run blocked on ANTHROPIC_API_KEY (checkpoint 3) |
+| S6–S8 | not started |
