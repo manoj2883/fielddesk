@@ -13,3 +13,9 @@ What broke, the evidence, and the fix. Newest entries go at the bottom. Failures
   - `AsyncAnthropic.messages.parse(...)` takes `output_format=`, `system=`, `thinking=`, `output_config=`. It has **no top-level `cache_control`**, so the cache breakpoint goes on the system text block.
   - The SDK exposes `OverloadedError` (529), `ServiceUnavailableError`, `RateLimitError`, `InternalServerError`, `APITimeoutError` and `APIConnectionError`. These are the only exceptions the graph retries.
 - **Temperature is unavailable.** Sonnet 5.5 and Haiku 5.5 return a 400 for a non-default `temperature`, which the spec's "higher temperature" generation step relied on. Diversity now comes from seeded variation instead (DECISIONS D6).
+
+## 2026-10-20 · S1 domain fixture: YAML flow-mapping comma
+
+- **Symptom:** `test_safety_codes_cover_the_named_hazards` failed. No safety code's meaning contained "fire", although two were written that way.
+- **Cause:** `{..., meaning: exhaust aftertreatment over-temperature, fire risk}` is a YAML flow mapping. The comma ended the value, and `fire risk` was parsed as a separate key with a null value. The meaning was silently cut short and nothing raised an error.
+- **Fix:** every `meaning` is now quoted. The test that caught it stays. Without it, the generator would have described RX-E128 and RX-E655 without the fire hazard, which is the fact that makes them safety codes.

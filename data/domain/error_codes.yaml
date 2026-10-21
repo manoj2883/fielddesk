@@ -1,0 +1,28 @@
+# Fictional diagnostic codes. `safety: true` marks codes that make a ticket safety_risk by rule.
+# applies_to lists machine types the code can appear on.
+codes:
+  - {code: RX-E101, subsystem: engine, severity: warning, safety: false, applies_to: [tractor, combine, loader], meaning: "coolant temperature above normal range"}
+  - {code: RX-E114, subsystem: engine, severity: fault, safety: false, applies_to: [tractor, combine, loader], meaning: "fuel rail pressure low"}
+  - {code: RX-E128, subsystem: engine, severity: critical, safety: true, applies_to: [tractor, combine, loader], meaning: "exhaust aftertreatment over-temperature, fire risk"}
+  - {code: RX-E140, subsystem: engine, severity: info, safety: false, applies_to: [tractor, combine, loader], meaning: "scheduled service interval reached"}
+  - {code: RX-E205, subsystem: transmission, severity: warning, safety: false, applies_to: [tractor], meaning: "clutch pack slip detected"}
+  - {code: RX-E214, subsystem: transmission, severity: fault, safety: false, applies_to: [tractor, loader], meaning: "shift solenoid circuit open"}
+  - {code: RX-E230, subsystem: transmission, severity: critical, safety: true, applies_to: [tractor, loader], meaning: "park brake engagement failure"}
+  - {code: RX-E302, subsystem: hydraulics, severity: warning, safety: false, applies_to: [tractor, combine, loader], meaning: "hydraulic oil temperature high"}
+  - {code: RX-E315, subsystem: hydraulics, severity: fault, safety: false, applies_to: [tractor, loader], meaning: "remote valve response slow"}
+  - {code: RX-E333, subsystem: hydraulics, severity: critical, safety: true, applies_to: [loader, tractor], meaning: "boom hold pressure lost under load"}
+  - {code: RX-E401, subsystem: electrical, severity: warning, safety: false, applies_to: [tractor, combine, loader], meaning: "system voltage low"}
+  - {code: RX-E418, subsystem: electrical, severity: fault, safety: false, applies_to: [tractor, combine, loader], meaning: "CAN bus communication lost with display"}
+  - {code: RX-E425, subsystem: electrical, severity: info, safety: false, applies_to: [tractor, combine, loader], meaning: "software update available"}
+  - {code: RX-E502, subsystem: steering, severity: warning, safety: false, applies_to: [tractor, combine, loader], meaning: "auto-guidance signal degraded"}
+  - {code: RX-E519, subsystem: steering, severity: critical, safety: true, applies_to: [tractor, combine, loader], meaning: "steering pressure sensor implausible, manual steering assist lost"}
+  - {code: RX-E604, subsystem: header, severity: warning, safety: false, applies_to: [combine], meaning: "header height sensor out of calibration"}
+  - {code: RX-E611, subsystem: header, severity: fault, safety: false, applies_to: [combine], meaning: "feeder house drive slip"}
+  - {code: RX-E627, subsystem: threshing, severity: fault, safety: false, applies_to: [combine], meaning: "rotor speed sensor fault"}
+  - {code: RX-E640, subsystem: threshing, severity: warning, safety: false, applies_to: [combine], meaning: "grain loss sensor reading high"}
+  - {code: RX-E655, subsystem: grain_handling, severity: critical, safety: true, applies_to: [combine], meaning: "chaff accumulation near exhaust, fire risk"}
+  - {code: RX-E701, subsystem: brakes, severity: critical, safety: true, applies_to: [tractor, loader, combine], meaning: "service brake pressure low"}
+  - {code: RX-E712, subsystem: brakes, severity: warning, safety: false, applies_to: [tractor, loader], meaning: "brake pad wear indicator"}
+  - {code: RX-E803, subsystem: cab, severity: info, safety: false, applies_to: [tractor, combine, loader], meaning: "cab air filter restriction"}
+  - {code: RX-E817, subsystem: cab, severity: warning, safety: false, applies_to: [tractor, combine, loader], meaning: "HVAC compressor clutch fault"}
+  - {code: RX-E906, subsystem: telematics, severity: info, safety: false, applies_to: [tractor, combine, loader], meaning: "telematics modem not reporting"}

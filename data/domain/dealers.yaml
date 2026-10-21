@@ -1,0 +1,18 @@
+# Fictional dealerships. No real businesses, people, phone numbers or emails.
+# `voice` steers how generated tickets read. It never affects labels.
+dealers:
+  - {name: Coldwater Flats Implement, region: north plains, voice: terse, notes: "one-line messages, no greetings"}
+  - {name: Halvorsen & Pike Ag Supply, region: upper midwest, voice: chatty, notes: "long context, mentions the customer's farm history"}
+  - {name: Redstone Bend Equipment, region: southwest, voice: frustrated, notes: "has escalated before, references earlier tickets"}
+  - {name: Tamarack Valley Machinery, region: northwest, voice: non_native_english, notes: "grammatically loose but precise on technical detail"}
+  - {name: Brightwater Farm Power, region: southeast, voice: shorthand, notes: "abbreviations like hrs, cust, p/n, w/, ASAP"}
+  - {name: Kestrel Ridge Tractor Co, region: central plains, voice: formal, notes: "structured, numbered points"}
+  - {name: Old Mill Crossing Equipment, region: northeast, voice: chatty, notes: "friendly, apologetic, sometimes rambles"}
+  - {name: Sagebrush County Implement, region: mountain west, voice: terse, notes: "subject line does most of the work"}
+  - {name: Lindqvist Agri Service, region: upper midwest, voice: non_native_english, notes: "translates idioms literally"}
+  - {name: Copperhead Creek Machinery, region: south central, voice: frustrated, notes: "all-caps for emphasis"}
+  - {name: Prairie Lantern Equipment, region: north plains, voice: shorthand, notes: "pastes diagnostic readouts with little explanation"}
+  - {name: Westfold Harvest Systems, region: pacific northwest, voice: formal, notes: "cites service bulletins by number"}
+  - {name: Bramblewood Implement Group, region: mid-atlantic, voice: chatty, notes: "asks several small side questions"}
+  - {name: Iron Gate Farm Equipment, region: great lakes, voice: frustrated, notes: "time pressure from a waiting customer"}
+  - {name: Juniper Hollow Ag Center, region: southwest, voice: shorthand, notes: "texts-from-the-field style"}

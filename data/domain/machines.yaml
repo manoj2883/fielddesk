@@ -1,0 +1,35 @@
+# Fictional Ridgeline Equipment product line. Any resemblance to real models is accidental.
+oem: Ridgeline Equipment
+machines:
+  - model: Ridgeline T420
+    type: tractor
+    description: utility tractor, 95 hp, loader-ready
+    hour_range: [50, 9000]
+  - model: Ridgeline T680
+    type: tractor
+    description: row-crop tractor, 210 hp, powershift
+    hour_range: [100, 12000]
+  - model: Ridgeline T910 Quadrant
+    type: tractor
+    description: four-wheel-drive articulated tractor, 470 hp
+    hour_range: [200, 15000]
+  - model: Ridgeline H7 Harvester
+    type: combine
+    description: class 7 rotary combine
+    hour_range: [80, 6000]
+  - model: Ridgeline H9 Harvester
+    type: combine
+    description: class 9 rotary combine with draper header
+    hour_range: [80, 5000]
+  - model: Ridgeline L35 Compact
+    type: loader
+    description: compact track loader, 2 tonne rated capacity
+    hour_range: [20, 7000]
+  - model: Ridgeline L60 Wheel
+    type: loader
+    description: wheel loader, 3.2 m3 bucket
+    hour_range: [50, 14000]
+  - model: Ridgeline L22 Skid
+    type: loader
+    description: skid steer loader, vertical lift
+    hour_range: [20, 6500]
