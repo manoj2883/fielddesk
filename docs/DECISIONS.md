@@ -28,3 +28,16 @@ ADR-lite. Each entry gives the context, the options, the choice and the trade-of
 - **Context:** The draft model may invent part numbers, prices, timelines or warranty commitments. A commitment sent to a dealer by mistake is the costliest failure the drafting step can make.
 - **Choice:** `check_draft` is a regex guard with no LLM. It fails on any code or part number, dollar amount, or timeline that doesn't appear in the ticket, and on any commitment phrase ("is covered", "claim approved", "we will replace", "free of charge"). Failing escalates with `guard_failed`.
 - **Trade-off:** It will flag some harmless drafts (for example "we will replace the filter if…"). The guard pass rate is reported in the baseline so the cost of that strictness is visible. Chapter 2's LLM judge can grade drafts more finely, and this guard stays as a hard floor beneath it.
+
+## D4 · Safety escalation is an OR of the model and the guard
+
+- **Context:** Two independent signals can detect a safety hazard: the classifier's `safety_flag` and the deterministic keyword guard. Requiring both (AND) gives fewer escalations. Using either (OR) catches more.
+- **Choice:** OR, and safety is checked before category `other` and low confidence, so it's the recorded reason whenever it applies. `escalation_detail` names which source fired, so the baseline can report each source's recall separately.
+- **Trade-off:** More false escalations (for example "smoke" in "smoke test the new display"). One safety miss costs far more than a specialist spending 30 seconds dismissing a false alarm. The baseline reports escalation precision so the cost is visible, not hidden.
+
+## D1 · Haiku classifies, Sonnet drafts
+
+- **Context:** Classification is short, structured and high-volume. The draft is free text that a dealer may read, so quality matters more there and volume is lower (escalated tickets never get a draft).
+- **Choice:** `claude-haiku-5-5` for classify, with structured output into `ClassifierOutput`, thinking disabled and effort `low`. `claude-sonnet-5-5` for drafts, with thinking off via `between_tools` and effort `medium`. No `temperature` on either: current models reject non-default values.
+- **Trade-off:** Haiku's self-reported confidence may be poorly calibrated, and escalation depends on it. The baseline measures this (ECE, reliability table, threshold sweep) instead of assuming it.
+- **Also:** the classifier's system prompt includes the triage policy (category definitions, priority rules). A real support team would hand that policy to any new triager, so giving it to the model isn't leakage: the labels come from spec *facts* the model never sees.

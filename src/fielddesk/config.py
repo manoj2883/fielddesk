@@ -62,6 +62,7 @@ class Settings(BaseSettings):
     draft_max_tokens: int = 1024
     node_run_timeout_s: float = 45.0
     retry_max_attempts: int = 3
+    retry_initial_interval_s: float = 0.5
 
     ledger_path: Path = REPO_ROOT / ".spend" / "ledger.jsonl"
     db_path: Path = REPO_ROOT / "fielddesk.db"

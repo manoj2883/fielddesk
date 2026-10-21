@@ -29,3 +29,17 @@ What broke, the evidence, and the fix. Newest entries go at the bottom. Failures
 ## 2026-10-20 · S2 regex miss in the brake guard
 
 - The first draft of the brake pattern matched "brakes not holding" but not "brakes **are** not holding". The table-driven test caught it before any data existed. Fixed with an optional `(are|is)` and kept as a test case.
+
+## 2026-10-20 · S3 the error handler is a node, so it needs the timeout rules too
+
+- **Symptom:** `builder.compile()` raised `ValueError: Node timeouts are only supported for async nodes ... Node '__default_error_handler__' is sync.`
+- **Cause:** `set_node_defaults(timeout=..., error_handler=...)` applies the default timeout to every node, and LangGraph runs the error handler as a node (`__default_error_handler__` in the compiled graph). The docs' handler example is a sync `def`. Combined with a default timeout, that example fails at compile time.
+- **Fix:** `on_node_error` is `async def`. A comment in `graph.py` points back here.
+- **Also:** mypy rejects the documented two-argument handler `(state, error: NodeError)`, because the stubs only model single-argument nodes. That line has a scoped `# type: ignore[arg-type]` with a comment explaining why. Node factories return a `NodeFn` Protocol, since a `Callable[[TriageState], ...]` alias doesn't match LangGraph's node protocol, which requires the parameter to be named `state`.
+- **Failure-path tests** (`tests/test_graph.py`), all against a scripted fake client:
+  - one 529 then success: retried, and a draft is produced;
+  - persistent 529: 3 attempts, then `llm_error`;
+  - 400 and refusals: one attempt each, no retry;
+  - a draft call that hangs: `NodeTimeoutError`, retried once, then `llm_error`, with the classification kept;
+  - budget exhausted: no API call, `llm_error`;
+  - a crash outside the graph: the last-resort catch in `TriageAgent.run` still returns a valid result.
