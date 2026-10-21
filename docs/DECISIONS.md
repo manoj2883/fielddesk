@@ -53,3 +53,22 @@ ADR-lite. Each entry gives the context, the options, the choice and the trade-of
 - **Context:** The chapter spec asked for generation "at higher temperature". `claude-sonnet-5-5` returns a 400 for any non-default `temperature`.
 - **Choice:** Variation is pushed into the seeded spec matrix instead: dealer voice (6 styles across 15 dealers), three length bands, messy traits (typos, vague, angry, shorthand, missing fields, run-on), deadline phrasings, safety-symptom phrasings, misleading-wording twists and injection sentences. The static system prompt (rules plus 8 hand-written example tickets across all categories and voices) is cached; only the per-ticket FACTS/STYLE block changes. Near-duplicates are removed afterwards with rapidfuzz.
 - **Trade-off:** One generator family with one decoding setting can still converge on a "house style". That is a known limit in the dataset card. The blind second pass by a model from another family partly checks for it.
+
+## D13 · Free OpenRouter models for every role (supersedes D1 and D2's model choices)
+
+- **Context:** The chapter spec named Claude Haiku-class and Sonnet-class models. The project owner chose $0 free models over buying API credits, and noted the choice can be reversed later.
+- **Options:**
+  - (A) Claude through the Anthropic API, about $3 for the chapter;
+  - (B) Claude through OpenRouter credits;
+  - (C) free OpenRouter models for everything.
+- **Choice:** (C), with the switch kept cheap. `llm.py` picks the backend per model ID: `vendor/model` goes to OpenRouter's chat-completions API, a bare `claude-*` ID goes to the Anthropic SDK. Moving back to Claude is four lines in `.env`, and both paths have tests. Defaults:
+  - generator and draft: `google/gemma-4-31b-it:free`
+  - classify: `minimax/minimax-m3.1-flash:free`
+  - blind validator: `nvidia/nemotron-3-super-120b-a12b:free`
+  The generator–validator and classifier–validator pairs each come from different families.
+- **What changes in the reliability story:**
+  - Structured output uses native `json_schema` where the model's endpoints support it. Otherwise it uses JSON mode with the schema in the prompt, and Pydantic validation is the real gate. Invalid JSON is a non-retryable `LLMResponseError`, so it escalates as `llm_error`. Schema-failure rate becomes a measured reliability number.
+  - Transient errors are now 408/429/5xx/timeouts on either backend. OpenRouter can report upstream failures inside an HTTP 200 body, so those are converted to typed errors too.
+  - A client-side pacer spaces OpenRouter calls 3.2 s apart, to stay under the free tier's per-minute limit. A daily-cap 429 can't be fixed by retrying, so the run stops cleanly and resumes from cache.
+  - Prompt caching and cache-hit metrics mostly don't apply to free models. They're reported as measured (usually 0), not dropped.
+- **Trade-off:** The agent being evaluated is no longer Claude. Free models can change or disappear without notice, which hurts reproducibility, so every results file records the exact model IDs and dates. Quality is unknown until the baseline measures it.

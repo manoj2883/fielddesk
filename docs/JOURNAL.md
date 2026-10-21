@@ -43,3 +43,15 @@ What broke, the evidence, and the fix. Newest entries go at the bottom. Failures
   - a draft call that hangs: `NodeTimeoutError`, retried once, then `llm_error`, with the classification kept;
   - budget exhausted: no API call, `llm_error`;
   - a crash outside the graph: the last-resort catch in `TriageAgent.run` still returns a valid result.
+
+## 2026-10-21 · Provider switch to free OpenRouter models
+
+- Added an OpenRouter backend next to the Anthropic one, without changing the `LLMClient.parse/text` interface. The nodes, generator and graph didn't need edits. Only the tests that relied on the old Claude defaults had to pin `claude-*` IDs.
+- New tests run against `httpx.MockTransport`:
+  - JSON-mode schema injection and fenced-JSON parsing;
+  - native `json_schema` for capable models;
+  - schema violations, truncation, content filter, 429, and a 200-with-error body;
+  - pacer spacing;
+  - the full graph on free-model IDs;
+  - a 429 retried 3 times, then a clean `llm_error`.
+- Still unverified until a key exists: whether these exact free models honor JSON mode reliably, and the account's real daily cap. Both are checked at checkpoint 3.

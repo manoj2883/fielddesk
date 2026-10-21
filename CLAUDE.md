@@ -2,14 +2,16 @@
 
 Triage agent for dealer → manufacturer support tickets. The OEM is fictional (Ridgeline Equipment). Python 3.12, uv, LangGraph 1.2, FastAPI.
 
+Models are chosen per role in `src/fielddesk/config.py`. The defaults are **free OpenRouter models** (needs `OPENROUTER_API_KEY`). A bare `claude-*` ID routes that role to Anthropic instead (needs `ANTHROPIC_API_KEY`).
+
 ## Commands
 
 ```bash
 uv sync                    # install (lockfile committed)
 make lint                  # ruff check + ruff format --check + mypy (strict on schemas.py)
 make test                  # pytest with coverage; network blocked except loopback
-RUN_LIVE=1 make test-live  # 3 real API calls on dev tickets (costs money)
-make gen-sample            # 10 generated tickets for review (costs money)
+RUN_LIVE=1 make test-live  # 3 real triage runs on dev tickets (uses API quota)
+make gen-sample            # 10 generated tickets for review (uses API quota)
 make gen-data              # full 200-ticket generation (cached by spec hash; reruns are free)
 make validate-data         # dedup + blind second-model labeling + review queue + split
 make baseline              # keyword baseline + agent on the DEV split only
@@ -33,7 +35,8 @@ On Windows, if `uv` or `make` isn't found, open a new shell (winget updated PATH
 - **Never read `data/tickets_test.jsonl`** during prompt or agent work. Only its hash (`data/TEST_SET_LOCK`) is checked. Tune on dev.
 - **Spend cap:** `FIELDDESK_MAX_SPEND_USD` (default $5). The ledger at `.spend/ledger.jsonl` is cumulative across runs. Don't delete it to get around the cap.
 - **Secrets** live only in `.env`. Never print or log keys. Only `.env.example` is committed.
-- **No temperature** parameter: current Claude models reject non-default values.
+- **No temperature** parameter: current Claude models reject non-default values, and the generator keeps one decoding setting for every provider.
+- The free tier has per-minute and daily caps. Every stage is cached and resumable: rerun the same command to continue.
 - One retry layer: SDK `max_retries=0`, and LangGraph `RetryPolicy(retry_on=is_transient)`.
 - A failed LLM call must end in a valid escalated `TriageResult` (`llm_error`), never a 500.
 - Run `make lint test` after every change and show the output before claiming it passes.

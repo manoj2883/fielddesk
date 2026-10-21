@@ -65,6 +65,8 @@ def agent(
         anthropic_api_key=None,
         ledger_path=tmp_path / "ledger.jsonl",
         retry_initial_interval_s=0.01,
+        classify_model="claude-haiku-5-5",
+        draft_model="claude-sonnet-5-5",
         **settings,
     )
     fake = FakeAnthropic(respond)

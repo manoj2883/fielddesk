@@ -46,11 +46,27 @@ class Settings(BaseSettings):
         validation_alias=AliasChoices("OPENROUTER_API_KEY", "FIELDDESK_OPENROUTER_API_KEY"),
     )
 
-    classify_model: str = "claude-haiku-5-5"
-    draft_model: str = "claude-sonnet-5-5"
-    generator_model: str = "claude-sonnet-5-5"
+    # Model IDs choose the provider: "vendor/model" -> OpenRouter, bare "claude-*" -> Anthropic.
+    # Defaults are free OpenRouter models (plan change 2026-10-20). To switch back to Claude, set
+    # FIELDDESK_CLASSIFY_MODEL=claude-haiku-5-5, FIELDDESK_DRAFT_MODEL=claude-sonnet-5-5 and
+    # FIELDDESK_GENERATOR_MODEL=claude-sonnet-5-5.
+    classify_model: str = "minimax/minimax-m3.1-flash:free"
+    draft_model: str = "google/gemma-4-31b-it:free"
+    generator_model: str = "google/gemma-4-31b-it:free"
     validator_model: str = "nvidia/nemotron-3-super-120b-a12b:free"
     openrouter_base_url: str = "https://openrouter.ai/api/v1"
+    # Free tier allows ~20 requests/minute; 3.2 s spacing stays under it.
+    openrouter_min_interval_s: float = 3.2
+    # Models whose OpenRouter endpoints support response_format=json_schema (checked 2026-10-20
+    # from the public /models list). Others use JSON mode plus the schema in the prompt.
+    openrouter_json_schema_models: frozenset[str] = frozenset(
+        {
+            "nvidia/nemotron-3-super-120b-a12b:free",
+            "nvidia/nemotron-3.5-super-vl:free",
+            "dots-studio/dots-3-note-preview:free",
+            "xingchen-agi/xing4.0-29b-a4b:free",
+        }
+    )
 
     classify_prompt_version: str = "classify_v1"
     draft_prompt_version: str = "draft_v1"

@@ -147,7 +147,11 @@ async def test_generation_is_cached_and_retries_on_leakage(
     def respond(kw: dict[str, Any]) -> Any:
         return message(parsed=gen.GeneratedText(**next(replies)))
 
-    settings = Settings(anthropic_api_key=None, ledger_path=tmp_path / "ledger.jsonl")
+    settings = Settings(
+        anthropic_api_key=None,
+        ledger_path=tmp_path / "ledger.jsonl",
+        generator_model="claude-sonnet-5-5",
+    )
     llm = LLMClient(settings, client=cast(anthropic.AsyncAnthropic, FakeAnthropic(respond)))
 
     first = await gen.generate_one(spec, llm, settings)

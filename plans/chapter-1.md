@@ -14,6 +14,18 @@ Status: **approved 2026-10-20**. Change at approval: the blind validator pass ru
 | Structured output: `client.messages.parse(output_format=PydanticModel)` → `.parsed_output`. Minimum cacheable prefix is 512 tokens on the 5.5 models. | claude-api skill, Python docs |
 | Machine: Windows 11, 8 GB RAM. Python 3.12 is installed. Missing: **uv, make, docker**. `ANTHROPIC_API_KEY` is not set and `ant` is not installed. | local probe |
 
+## Change 2026-10-20: free OpenRouter models for every role (user decision, option C)
+
+The user chose $0 free OpenRouter models over an Anthropic key, accepting the risks I raised: the agent is no longer Claude; the free tier's daily cap means a multi-day run unless the account holds $10+ in credits; free models are less reproducible. They noted it can be switched back later.
+- `llm.py` gets an OpenRouter backend. The provider is chosen per model ID (an ID with `/` goes to OpenRouter, a bare `claude-*` ID to Anthropic), so switching back is a `.env` change.
+- Defaults:
+  - generator and draft: `google/gemma-4-31b-it:free`
+  - classify: `minimax/minimax-m3.1-flash:free`
+  - validator: `nvidia/nemotron-3-super-120b-a12b:free`
+  Each pair that must be independent comes from different families (generator vs validator, classifier vs validator).
+- Every stage is cached and resumable (generation, validation, baseline), so hitting the daily cap pauses the run instead of failing it.
+- Prompt caching and cache-hit metrics don't apply to these free models; they're reported as 0 rather than omitted.
+
 ## Decision log
 
 | # | Decision | Why |
