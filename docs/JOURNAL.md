@@ -58,7 +58,7 @@ What broke, the evidence, and the fix. Newest entries go at the bottom. Failures
 
 ## 2026-10-21 · Live smoke tests: which free models actually work
 
-The account is free tier with **50 requests/day** (read from OpenRouter's `/key` endpoint). Ten requests went into finding working models:
+The account is free tier (`is_free_tier: true` from OpenRouter's `/key` endpoint). *Correction, same day:* I first read `limit: 50` as the daily request cap. But `limit_remaining` stayed at 50 after about 15 requests, so that field is a credit limit, not a request counter. The real daily request cap isn't exposed by the API. The pipeline treats it as unknown, and a daily-cap 429 just pauses a resumable run. Ten requests went into finding working models:
 
 | Model | Role tried | Result |
 |---|---|---|
@@ -85,3 +85,10 @@ The account is free tier with **50 requests/day** (read from OpenRouter's `/key`
 Generator, classifier and validator are three different families. That matters more than which model is "best": the classifier must not grade text written by its own model, and the validator must not share a family with either.
 
 **Lesson for the README:** with free models, "which model" is a runtime fact, not a design-time one. Results files record the model IDs actually used, and the pipeline has to tolerate a model disappearing mid-run.
+
+## 2026-10-21 · First live sample run: four bugs before a single ticket was usable
+
+1. **One truncated response crashed the whole batch.** `asyncio.gather` re-raised the first `LLMResponseError`. Fix: an unusable answer (truncated, refused, bad JSON) now fails only that attempt, gets recorded as `bad_response:*`, and the next attempt runs. Test: `test_bad_response_fails_one_attempt_not_the_run`.
+2. **Cache files were written as NTFS alternate data streams.** The cache filename included the model ID `minimax/minimax-m3.1-flash:free`. The `/` made a subdirectory, and on Windows the `:` turns `name:free_a0.json` into a hidden stream on a file called `..._minimax`. `ls` showed 4 odd entries and no `.json` files. Fix: model IDs are reduced to `[A-Za-z0-9._-]` in filenames. Test: `test_cache_filename_is_portable`.
+3. **Hidden reasoning ran past `max_tokens`.** MiniMax used 699 reasoning tokens to write a 496-character ticket, and occasionally runs past 3,000. The generator limit is now 6,000. These models are free, so there's no budget effect.
+4. **Fact sheets copied word for word.** A sample ticket said "There is currently no effect on the machine's operation", which is the renderer's wording, not a dealer's. Fix: `generate_v2.md` adds rule 9, "never copy the wording of the FACTS", with examples. `generate_v1.md` stays in the repo, so the change is visible in history.

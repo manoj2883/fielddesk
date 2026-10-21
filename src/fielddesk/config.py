@@ -82,7 +82,7 @@ class Settings(BaseSettings):
     # models cost $0 per token, so the budget reservation for these limits is also $0.
     classify_max_tokens: int = 2048
     draft_max_tokens: int = 2048
-    generator_max_tokens: int = 3000
+    generator_max_tokens: int = 6000
     generator_timeout_s: float = 120.0
     node_run_timeout_s: float = 45.0
     retry_max_attempts: int = 3

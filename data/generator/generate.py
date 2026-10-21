@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import json
 import random
+import re
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -14,10 +15,10 @@ from data.generator.leakage import check_text
 from data.generator.render import render
 from data.generator.spec import ScenarioSpec
 from fielddesk.config import REPO_ROOT, Settings
-from fielddesk.llm import CallSpec, LLMClient, is_transient, log_event
+from fielddesk.llm import CallSpec, LLMClient, LLMResponseError, is_transient, log_event
 from fielddesk.schemas import LabeledTicket, TicketInput
 
-GEN_PROMPT_VERSION = "generate_v1"
+GEN_PROMPT_VERSION = "generate_v2"
 PROMPT_DIR = Path(__file__).parent / "prompts"
 CACHE_DIR = REPO_ROOT / ".cache" / "generations"
 MAX_ATTEMPTS = 4
@@ -39,8 +40,14 @@ class GenOutcome:
     rejections: list[list[str]]
 
 
+def _safe(name: str) -> str:
+    """Model IDs contain '/' and ':'. On Windows ':' silently writes an NTFS alternate data
+    stream instead of a file (JOURNAL 2026-10-21), so keep only portable characters."""
+    return re.sub(r"[^A-Za-z0-9._-]+", "-", name)
+
+
 def _cache_path(spec: ScenarioSpec, attempt: int, model: str) -> Path:
-    return CACHE_DIR / f"{spec.spec_hash}_{GEN_PROMPT_VERSION}_{model}_a{attempt}.json"
+    return CACHE_DIR / f"{spec.spec_hash}_{GEN_PROMPT_VERSION}_{_safe(model)}_a{attempt}.json"
 
 
 def to_ticket(spec: ScenarioSpec, text: GeneratedText) -> TicketInput:
@@ -88,7 +95,13 @@ async def generate_one(spec: ScenarioSpec, llm: LLMClient, settings: Settings) -
                 effort="medium",
                 timeout_s=settings.generator_timeout_s,
             )
-            text, c = await _call_with_retry(llm, call)
+            try:
+                text, c = await _call_with_retry(llm, call)
+            except LLMResponseError as exc:
+                # One unusable answer (truncated, refused, bad JSON) fails this attempt only.
+                rejections.append([f"bad_response:{str(exc)[:80]}"])
+                log_event("generation_bad_response", ticket_id=spec.ticket_id, attempt=attempt)
+                continue
             cost += c
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text(text.model_dump_json(), encoding="utf-8", newline="\n")

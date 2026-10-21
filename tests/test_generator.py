@@ -172,3 +172,37 @@ def test_write_jsonl_uses_lf(tmp_path: Path) -> None:
     out = tmp_path / "x.jsonl"
     gen.write_jsonl(out, [{"a": 1}, {"b": 2}])
     assert out.read_bytes() == b'{"a": 1}\n{"b": 2}\n'
+
+
+def test_cache_filename_is_portable() -> None:
+    path = gen._cache_path(SPECS[0], 1, "minimax/minimax-m3.1-flash:free")
+    assert path.parent == gen.CACHE_DIR
+    assert ":" not in path.name
+    assert "/" not in path.name
+
+
+async def test_bad_response_fails_one_attempt_not_the_run(tmp_path: Path, monkeypatch: Any) -> None:
+    monkeypatch.setattr(gen, "CACHE_DIR", tmp_path / "cache")
+    spec = next(
+        s for s in SPECS if s.facts.difficulty is Difficulty.CLEAN and not s.surface.error_code
+    )
+    replies = iter(
+        [
+            message(stop_reason="max_tokens"),
+            message(
+                parsed=gen.GeneratedText(subject="Loader help", message="Customer unit acting up.")
+            ),
+        ]
+    )
+    settings = Settings(
+        anthropic_api_key=None,
+        ledger_path=tmp_path / "ledger.jsonl",
+        generator_model="claude-sonnet-5-5",
+    )
+    llm = LLMClient(
+        settings, client=cast(anthropic.AsyncAnthropic, FakeAnthropic(lambda kw: next(replies)))
+    )
+    out = await gen.generate_one(spec, llm, settings)
+    assert out.row is not None
+    assert out.attempts == 2
+    assert out.rejections[0][0].startswith("bad_response:")
