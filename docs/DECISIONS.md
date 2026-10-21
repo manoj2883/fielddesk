@@ -41,3 +41,9 @@ ADR-lite. Each entry gives the context, the options, the choice and the trade-of
 - **Choice:** `claude-haiku-5-5` for classify, with structured output into `ClassifierOutput`, thinking disabled and effort `low`. `claude-sonnet-5-5` for drafts, with thinking off via `between_tools` and effort `medium`. No `temperature` on either: current models reject non-default values.
 - **Trade-off:** Haiku's self-reported confidence may be poorly calibrated, and escalation depends on it. The baseline measures this (ECE, reliability table, threshold sweep) instead of assuming it.
 - **Also:** the classifier's system prompt includes the triage policy (category definitions, priority rules). A real support team would hand that policy to any new triager, so giving it to the model isn't leakage: the labels come from spec *facts* the model never sees.
+
+## D10 · Write the Dockerfile without building it
+
+- **Context:** The dev machine is a Windows laptop with 8 GB RAM and no Docker. Docker Desktop needs WSL2 and would take 2–4 GB.
+- **Choice:** Ship a multi-stage, uv-based Dockerfile (dependency layer separated from source, non-root user, healthcheck), and say plainly in the README and the Dockerfile that it hasn't been built locally. The app runs natively with `make serve`.
+- **Trade-off:** The image is unverified until a CI runner builds it. That check belongs with the CI gate in Chapter 4.

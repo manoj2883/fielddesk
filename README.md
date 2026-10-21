@@ -22,8 +22,8 @@ Later chapters: an LLM judge, stress testing, a CI quality gate, and cost contro
 |---|---|
 | Repo, tooling (uv, ruff, mypy strict on schemas, pytest with network blocked) | ✅ |
 | Schemas, labeling rules as tested code, Ridgeline domain fixture | ✅ |
-| LLM wrapper (spend cap, cost accounting, prompt caching) and deterministic guards | ⏳ |
-| Agent graph, API, persistence | ⏳ |
+| LLM wrapper (spend cap, cost accounting, prompt caching) and deterministic guards | ✅ |
+| Agent graph (retries, timeouts, error handler), API, SQLite persistence | ✅ |
 | Synthetic dataset (200 tickets) and validation | ⏳ |
 | Baseline evaluation and error analysis | ⏳ |
 

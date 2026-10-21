@@ -1,0 +1,11 @@
+.venv
+.git
+.env
+.spend
+.cache
+*.db
+data
+evals
+tests
+plans
+docs
