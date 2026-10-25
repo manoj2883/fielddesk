@@ -107,3 +107,18 @@ All 10 tickets in the first live sample passed the leakage filter, and their lab
 - **Label validity problem:** FD-0162 was labeled `safety_risk=True` because of RX-E230 (park-brake engagement failure), but the text only said "RX-E230". In Chapter 1 the agent has no code lookup, so that label is unreachable. It would score as a safety miss, but the miss would come from the dataset, not the agent. Fix: the renderer tells the generator to say in plain words what the code is about, and a new check rejects safety-code tickets with no hazard word (`safety_code_unexplained`). Chapter 2 grounding (code lookup) would make the harder version of this case fair, and it's listed as a next-chapter idea.
 - **Cache key now includes a hash of the rendered instructions.** Before, a renderer change (like the one above) could have served a stale cached ticket for an unchanged spec.
 - **My own tooling bug:** the patch that added the hazard regex was written through a non-raw Python string, so `\b` landed in the file as a literal backspace (0x08). The regex could never match. The new test caught it. The full test run also reported 8 h 47 m: the laptop slept mid-run. Rerun: 26 s.
+
+## 2026-10-24 · S6 day 1: a retired model, the daily cap, and a check that never ran
+
+- **MiniMax's `:free` variant was retired on 2026-10-22.** OpenRouter returns 404 and points to the paid ID. Generation and drafting both used it. The user chose to stay on free models over buying credits. Smoke test, one call each on FD-0070 (prompt injection, the hardest fidelity case):
+
+  | Model | Result |
+  |---|---|
+  | `poolside/laguna-s-2.1:free` | ✅ 5.0 s, 147 output tokens, injection present, its own dealer voice |
+  | `recursive/flint-v1.0:free` | ⚠️ 19 s, 2,842 output tokens, echoed the fact-sheet wording ("or we are asking for goodwill, or the cause may be operator damage") |
+  | `xingchen-agi/xing4.0-29b-a4b:free` | ❌ HTTP 429 upstream (as on 2026-10-21) |
+
+  Generator and draft moved to Laguna (Poolside), which is a fourth family. A new 10-ticket sample was approved at checkpoint 3: 10/10 accepted, 2 invented-code retries, $0. Known text quirks: invented reference numbers (in style for the "formal" voice), and one logic slip (FD-0007 says "received 2, billed 1" but asks for an overcharge credit).
+- **The daily cap is now measured: 50 free-model requests a day** (`free-models-per-day`, `X-RateLimit-Limit: 50`). The run stopped at 54 of 200 tickets. It also stopped with a traceback, because one exhausted 429 ended `asyncio.gather`. Fix: a transient error that outlasts every retry raises `GenerationPausedError`. The run then skips every spec it hasn't started, prints "PAUSED", and exits with code 3. Test: `test_rate_limit_pauses_the_run_without_crashing`.
+- **The `safety_code_unexplained` check had never run during generation.** It was added in 6624be5 with a unit test on `check_text`, but `generate_one` never passed `safety_code=`, so the default `False` switched it off. The unit test proved the function, not the pipeline. Fix plus a regression test through `generate_one`. All 4 safety-code tickets cached so far already name the hazard, so no data was affected. **Lesson:** test a filter at the call site that's supposed to apply it.
+- **rapidfuzz 3 doesn't normalize by default.** `token_set_ratio("The loader … kit.", "Loader … kit!")` scored below 90, so case and punctuation could hide a duplicate. Dedup now uses `processor=utils.default_process`. A related caveat: `token_set_ratio` scores 100 whenever one message's tokens are a subset of the other's. My first synthetic test rows shared a template, and 199 of 200 were dropped. The real score distribution gets checked before the threshold is trusted.

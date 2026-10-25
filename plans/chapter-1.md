@@ -92,5 +92,6 @@ Commits: one or more conventional commits per step (`chore:`, `feat:`, `test:`, 
 | S2 | done (e6987e0) |
 | S3 | done (3446bc4) |
 | S4 | done (1c80c0a) |
-| S5 | done (6234169; OpenRouter backend 0aea685, cb336d5; sample fixes 5007b05, c8f9e0d, 6624be5). Live sample v2 on free OpenRouter models, $0 projected; checkpoint 3 awaiting OK |
-| S6–S8 | not started |
+| S5 | done (6234169; OpenRouter backend 0aea685, cb336d5; sample fixes 5007b05, c8f9e0d, 6624be5). Checkpoint 3 approved 2026-10-24 |
+| S6 | in progress. Validation stage built and tested (`data/generator/validate.py`). Generator moved to `poolside/laguna-s-2.1:free` (MiniMax free retired); checkpoint 3 re-approved on a Laguna sample 2026-10-24. Generation paused by the 50/day free cap at 54/200; rerun `make gen-data` daily (~3 more days), then `make validate-data` |
+| S7–S8 | not started |
