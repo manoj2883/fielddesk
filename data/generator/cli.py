@@ -67,7 +67,7 @@ def show(outcomes: list[GenOutcome]) -> None:
 def summarize(outcomes: list[GenOutcome], full_n: int = 200) -> None:
     cost = sum(o.cost_usd for o in outcomes)
     calls = sum(o.attempts - o.cache_hits for o in outcomes)
-    rejected = sum(1 for o in outcomes if o.row is None)
+    rejected = sum(1 for o in outcomes if o.row is None and not o.paused)
     retries = sum(o.attempts - 1 for o in outcomes)
     hits = sum(o.cache_hits for o in outcomes)
     print("=" * 100)
@@ -108,8 +108,15 @@ def main(argv: list[str] | None = None) -> int:
         summarize(outcomes)
         rows = [o.row for o in outcomes if o.row]
         write_jsonl(DATA / "generated.jsonl", rows)
-        failed = [o.spec.ticket_id for o in outcomes if o.row is None]
+        pending = [o.spec.ticket_id for o in outcomes if o.paused]
+        failed = [o.spec.ticket_id for o in outcomes if o.row is None and not o.paused]
         print(f"wrote {len(rows)} rows to data/generated.jsonl; unresolved: {failed}")
+        if pending:
+            print(
+                f"PAUSED by rate limits with {len(pending)} specs pending. "
+                "Rerun `make gen-data` after the daily cap resets; finished tickets are cached."
+            )
+            return 3
         return 0 if not failed else 1
     if args.cmd == "validate":
         from data.generator.validate import run_validation

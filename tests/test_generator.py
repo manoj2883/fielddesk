@@ -16,7 +16,7 @@ from fielddesk.config import Settings
 from fielddesk.labeling import label_from_facts
 from fielddesk.llm import LLMClient
 from fielddesk.schemas import Category, Difficulty, TrickyType, WarrantyStatus
-from tests.fakes import FakeAnthropic, message
+from tests.fakes import FakeAnthropic, api_status_error, message
 
 SPECS = build_specs()
 
@@ -245,3 +245,50 @@ def test_cache_key_changes_when_instructions_change(monkeypatch: Any) -> None:
     before = gen._cache_path(SPECS[0], 0, "m")
     monkeypatch.setattr(gen, "render", lambda spec, attempt=0: "different instructions")
     assert gen._cache_path(SPECS[0], 0, "m") != before
+
+
+async def test_generate_one_rejects_a_safety_code_ticket_without_the_hazard(
+    tmp_path: Path, monkeypatch: Any
+) -> None:
+    """Regression: the check existed but generate_one never passed safety_code (JOURNAL S6)."""
+    monkeypatch.setattr(gen, "CACHE_DIR", tmp_path / "cache")
+    spec = next(s for s in SPECS if s.facts.safety_code and s.surface.error_code)
+    code = spec.surface.error_code
+    replies = iter(
+        [
+            gen.GeneratedText(subject="Need help", message=f"Unit shows {code}, please advise."),
+            gen.GeneratedText(subject="Need help", message=f"Unit shows {code}, brake fault."),
+        ]
+    )
+    settings = Settings(
+        anthropic_api_key=None,
+        ledger_path=tmp_path / "ledger.jsonl",
+        generator_model="claude-sonnet-5-5",
+    )
+    llm = LLMClient(
+        settings,
+        client=cast(
+            anthropic.AsyncAnthropic, FakeAnthropic(lambda kw: message(parsed=next(replies)))
+        ),
+    )
+    out = await gen.generate_one(spec, llm, settings)
+    assert "safety_code_unexplained" in out.rejections[0]
+
+
+async def test_rate_limit_pauses_the_run_without_crashing(tmp_path: Path, monkeypatch: Any) -> None:
+    monkeypatch.setattr(gen, "CACHE_DIR", tmp_path / "cache")
+
+    async def no_sleep(_: float) -> None:
+        return None
+
+    monkeypatch.setattr(gen.asyncio, "sleep", no_sleep)
+    settings = Settings(
+        anthropic_api_key=None,
+        ledger_path=tmp_path / "ledger.jsonl",
+        generator_model="claude-sonnet-5-5",
+    )
+    fake = FakeAnthropic(lambda kw: api_status_error(429))
+    llm = LLMClient(settings, client=cast(anthropic.AsyncAnthropic, fake))
+    outcomes = await gen.generate_all(SPECS[:6], settings, concurrency=1, llm=llm)
+    assert all(o.paused and o.row is None for o in outcomes)
+    assert len(fake.messages.calls) == 4  # one ticket's retries, then nothing else is attempted

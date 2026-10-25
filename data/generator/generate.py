@@ -25,6 +25,10 @@ CACHE_DIR = REPO_ROOT / ".cache" / "generations"
 MAX_ATTEMPTS = 4
 
 
+class GenerationPausedError(RuntimeError):
+    """Rate limits outlasted every retry (usually the free tier's daily cap). Rerun later."""
+
+
 class GeneratedText(BaseModel):
     model_config = ConfigDict(extra="forbid")
     subject: str = Field(max_length=120)
@@ -39,6 +43,7 @@ class GenOutcome:
     cost_usd: float
     cache_hits: int
     rejections: list[list[str]]
+    paused: bool = False
 
 
 def _safe(name: str) -> str:
@@ -69,11 +74,15 @@ def to_ticket(spec: ScenarioSpec, text: GeneratedText) -> TicketInput:
     )
 
 
-async def _call_with_retry(llm: LLMClient, call: CallSpec) -> tuple[GeneratedText, float]:
+async def call_with_retry[T: BaseModel](
+    llm: LLMClient, call: CallSpec, output_format: type[T]
+) -> tuple[T, float]:
+    """Transient errors (429, 5xx, timeouts) get 4 tries with jittered backoff; anything else
+    raises at once. Shared by the generator and the blind validator."""
     for attempt in range(4):
         try:
-            text, metrics = await llm.parse(call, GeneratedText)
-            return text, metrics.cost_usd
+            parsed, metrics = await llm.parse(call, output_format)
+            return parsed, metrics.cost_usd
         except Exception as exc:
             if not is_transient(exc) or attempt == 3:
                 raise
@@ -101,18 +110,25 @@ async def generate_one(spec: ScenarioSpec, llm: LLMClient, settings: Settings) -
                 timeout_s=settings.generator_timeout_s,
             )
             try:
-                text, c = await _call_with_retry(llm, call)
+                text, c = await call_with_retry(llm, call, GeneratedText)
             except LLMResponseError as exc:
                 # One unusable answer (truncated, refused, bad JSON) fails this attempt only.
                 rejections.append([f"bad_response:{str(exc)[:80]}"])
                 log_event("generation_bad_response", ticket_id=spec.ticket_id, attempt=attempt)
                 continue
+            except Exception as exc:
+                if is_transient(exc):
+                    raise GenerationPausedError(str(exc)[:300]) from exc
+                raise
             cost += c
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text(text.model_dump_json(), encoding="utf-8", newline="\n")
 
         check = check_text(
-            f"{text.subject}\n{text.message}", spec.surface.error_code, spec.surface.injection_text
+            f"{text.subject}\n{text.message}",
+            spec.surface.error_code,
+            spec.surface.injection_text,
+            safety_code=spec.facts.safety_code,
         )
         if check.ok:
             row = LabeledTicket(
@@ -127,14 +143,26 @@ async def generate_one(spec: ScenarioSpec, llm: LLMClient, settings: Settings) -
 
 
 async def generate_all(
-    specs: list[ScenarioSpec], settings: Settings, concurrency: int = 4
+    specs: list[ScenarioSpec],
+    settings: Settings,
+    concurrency: int = 4,
+    llm: LLMClient | None = None,
 ) -> list[GenOutcome]:
-    llm = LLMClient(settings)
+    """On a pause, specs not yet started are skipped (no calls), so the rest of the quota is
+    left alone and the next run picks up from the cache."""
+    client = llm or LLMClient(settings)
     sem = asyncio.Semaphore(concurrency)
+    paused = asyncio.Event()
 
     async def guarded(spec: ScenarioSpec) -> GenOutcome:
         async with sem:
-            return await generate_one(spec, llm, settings)
+            if not paused.is_set():
+                try:
+                    return await generate_one(spec, client, settings)
+                except GenerationPausedError as exc:
+                    paused.set()
+                    log_event("generation_paused", ticket_id=spec.ticket_id, reason=str(exc))
+            return GenOutcome(spec, None, 0, 0.0, 0, [], paused=True)
 
     return await asyncio.gather(*(guarded(s) for s in specs))
 
