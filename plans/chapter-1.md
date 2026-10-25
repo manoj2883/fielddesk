@@ -75,8 +75,8 @@ Commits: one or more conventional commits per step (`chore:`, `feat:`, `test:`, 
 
 ## User actions needed (not blocking S0–S4, which are fully mocked)
 
-- Before **checkpoint 3**: put `ANTHROPIC_API_KEY` in `projects/fielddesk/.env`.
-- Before **S6**: create an OpenRouter key at openrouter.ai/keys and add it as `OPENROUTER_API_KEY` (no credits; validator is `nvidia/nemotron-3-super-120b-a12b:free`, resumable over several days if the daily cap bites).
+- ~~Before **checkpoint 3**: put `ANTHROPIC_API_KEY` in `projects/fielddesk/.env`.~~ Not needed: every role runs on free OpenRouter models (2026-10-21).
+- Done: before **S6**, create an OpenRouter key at openrouter.ai/keys and add it as `OPENROUTER_API_KEY` (no credits; validator is `nvidia/nemotron-3-super-120b-a12b:free`, resumable over several days if the daily cap bites).
 
 ## Not yet specified (fog)
 
@@ -92,5 +92,5 @@ Commits: one or more conventional commits per step (`chore:`, `feat:`, `test:`, 
 | S2 | done (e6987e0) |
 | S3 | done (3446bc4) |
 | S4 | done (1c80c0a) |
-| S5 | code done (6234169); sample run blocked on ANTHROPIC_API_KEY (checkpoint 3) |
+| S5 | done (6234169; OpenRouter backend 0aea685, cb336d5; sample fixes 5007b05, c8f9e0d, 6624be5). Live sample v2 on free OpenRouter models, $0 projected; checkpoint 3 awaiting OK |
 | S6–S8 | not started |
