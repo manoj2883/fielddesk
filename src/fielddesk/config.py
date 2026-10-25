@@ -52,10 +52,11 @@ class Settings(BaseSettings):
     # FIELDDESK_GENERATOR_MODEL=claude-sonnet-5-5.
     # Chosen 2026-10-21 by live smoke tests (JOURNAL): every pair that must be independent comes
     # from different families (generator vs classifier, generator vs validator, classifier vs
-    # validator).
+    # validator). MiniMax's :free variant was retired 2026-10-22; generator and draft moved to
+    # Poolside Laguna after a 2026-10-24 smoke test (JOURNAL).
     classify_model: str = "nvidia/nemotron-3.5-super-vl:free"
-    draft_model: str = "minimax/minimax-m3.1-flash:free"
-    generator_model: str = "minimax/minimax-m3.1-flash:free"
+    draft_model: str = "poolside/laguna-s-2.1:free"
+    generator_model: str = "poolside/laguna-s-2.1:free"
     validator_model: str = "google/gemma-4-31b-it:free"
     validator_fallback_model: str = "dots-studio/dots-3-note-preview:free"
     openrouter_base_url: str = "https://openrouter.ai/api/v1"
